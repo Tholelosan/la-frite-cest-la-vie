@@ -54,7 +54,7 @@ if ($match){
 //     'toto' => '24512735140645'
 // ]
 // "name" => "home"
-// ]
+]
 
     
 //RewriteEngine on
