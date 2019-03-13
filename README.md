@@ -222,3 +222,81 @@ class MainController extends CoreController {
 _Fabrice me force à venir jouer sur PUBG je ne vais donc pas finir ce README tout de suite :p SOORRYYY_
 
 Vite fait : il faut créer la classe DBData pour y coller un try catch qui ira chercher les infos de connexion qu'elle prend en paramètre dans le fichier config.conf qu'il ne faut pas versionner (coucou .gitignore) car assez délicat niveau sécurité ! Par contre on crée une version générique de config.conf dans le dossier app afin de permettre la copie pour ce fichier conf (ou l'inverse tiens :p)
+
+* La classe `DBData` gère la connexion à la base de données et l'ensemble des requêtes SQL qu'on peut vouloir faire dans un projet. Elle est donc un outil utile au fonctionnement de notre projet, on la range dans le dossier `Utils`
+* Pour la connexion à la BDD, il faut le faire dès l'instanciation de la classe... donc dans le constructeur.
+
+### Contenu de la classe DBData
+* Cette classe n'a pas de requêtes encore puisque le projet est pas terminé, on pourrait imaginer une requête qui renvoi les noms de chacun par la suite.
+```
+<?php
+class DBData {
+    private $dbh;
+    public function __construct() {
+        $configData = parse_ini_file(__DIR__.'/../../config.conf');
+        try {
+            $this->dbh = new PDO(
+                "mysql:host={$configData['DB_HOST']};dbname={$configData['DB_NAME']};charset=utf8",
+                $configData['DB_USERNAME'],
+                $configData['DB_PASSWORD'],
+                array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING) // Affiche les erreurs SQL à l'écran
+            );
+        }
+        catch(\Exception $exception) {
+            echo 'Erreur de connexion...<br>';
+            echo $exception->getMessage().'<br>';
+            echo '<pre>';
+            echo $exception->getTraceAsString();
+            echo '</pre>';
+            exit;
+        }
+    }
+}
+```
+#### Les fichiers config.conf
+* Il s'agit d'un fichier contenant les identifiants de connexion nécessaire au moment de la création (instanciation car c'est aussi une classe) du PDO (`$dbh` ici)
+* Etant donné que ce fichier contient des informations sensibles, on ne le versionnera pas (`.gitignore` coucou). Par contre on en crée une version générique sous le nom de `config.dist.cong` qu'on range dans le dossier app :
+```
+# Fichier de connexion générique à la BDD
+RawBlameHistory
+  
+; config file
+
+; database
+DB_HOST=
+DB_USERNAME=
+DB_PASSWORD=
+DB_NAME=
+```
+
+#### Le constructeur du DBData
+* `$configData = parse_ini_file(__DIR__.'/../../config.conf');` == On récupère le contenu de config.conf grâce à la `fonction parse_ini_file()`
+* Après on instancie notre PDO, par contre on ne veut pas une fatale error horrible mais plutôt quelque chose de plus propre qui nous renvoi un message d'erreur sympa, pas trop agressif, surtout le matin. Du coup on utilise le `try` - `catch`
+    * `try` == Essaye de faire tout ce qu'il y a là dedans
+    * Si tu y arrives, nickel continue
+    * Sinon, exécute le code qu'il y a dans le `catch`
+```
+try {
+    $this->dbh = new PDO(
+        "mysql:host={$configData['DB_HOST']};dbname={$configData['DB_NAME']};charset=utf8",
+        $configData['DB_USERNAME'],
+        $configData['DB_PASSWORD'],
+        array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING) // Affiche les erreurs SQL à l'écran
+    );
+}
+catch(\Exception $exception) {
+    echo 'Erreur de connexion...<br>';
+    echo $exception->getMessage().'<br>';
+    echo '<pre>';
+    echo $exception->getTraceAsString();
+    echo '</pre>';
+    exit;
+}
+```
+* Ici on donne en paramètres les différents paramètres nécessaire à l'instanciation du PDO
+
+### Où qu'elle va DBData ?
+
+* Nulle part, par contre on va l'instancier dans le constructeur de notre classe `CoreController` qui est le parent de tous les `controllers`, comme ça, tous les controllers enfant auront, par défaut, la connexion vers la BDD.
+> * /!\ Si on veut modifier le constructeur d'une classe enfant, il faudra utiliser une syntaxe de ce type à l'intérieur du constructeur enfant : `parent::__construct();`
+> * Ceci pour ne pas écraser la méthode du même nom présente dans le parent (cela vaut pour n'importe quelle méthode ou propriétés)
